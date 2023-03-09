@@ -6,8 +6,13 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build:ui": "rm -rf build && cd ../osa2/phonebook && npm run build && cp -r build ../fullstack-part3",
+    "deploy": "fly deploy",
+    "deploy:full": "npm run build:ui && npm run deploy",
+    "logs:prod": "fly logs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+
   "author": "tommi maki",
   "license": "ISC",
   "dependencies": {

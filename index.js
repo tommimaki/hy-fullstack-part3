@@ -29,18 +29,22 @@ app.get("/", (request, response) => {
 });
 
 //TODO length of mongoDB database to respond
-app.get("/info", (request, response) => {
-  const now = new Date();
-  const timezone = now.toString().match(/\(([A-Za-z\s].*)\)/)[1];
-  const date = now.toDateString();
-  const time = now.toLocaleTimeString();
+app.get("/info", (request, response, next) => {
+  Person.countDocuments({})
+    .then((count) => {
+      const now = new Date();
+      const timezone = now.toString().match(/\(([A-Za-z\s].*)\)/)[1];
+      const date = now.toDateString();
+      const time = now.toLocaleTimeString();
 
-  response.send(`
-      <h4>Phonebook has info for ${persons.length} people </h4>
-      <p>Current date: ${date}</p>
-      <p>Current time: ${time}</p>
-      <p>Timezone: ${timezone}</p>
-    `);
+      response.send(`
+        <h4>Phonebook has info for ${count} people </h4>
+        <p>Current date: ${date}</p>
+        <p>Current time: ${time}</p>
+        <p>Timezone: ${timezone}</p>
+      `);
+    })
+    .catch((error) => next(error));
 });
 
 app.get("/api/persons", (request, response) => {
