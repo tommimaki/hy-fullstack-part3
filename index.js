@@ -5,7 +5,6 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 const Person = require("./models/person");
-console.log(Person);
 
 app.use(cors());
 app.use(express.static("build"));
@@ -20,10 +19,7 @@ morgan.token("data", (req) => {
   if (req.method === "POST") return JSON.stringify(req.body);
 });
 
-const password = process.argv[2];
-
 const url = process.env.MONGODB_URI;
-// const url = `mongodb+srv://tommimaki97:${password}@cluster0.vazdipe.mongodb.net/Phonebook?retryWrites=true&w=majority`;
 
 mongoose.set("strictQuery", false);
 mongoose.connect(url);
@@ -31,6 +27,8 @@ mongoose.connect(url);
 app.get("/", (request, response) => {
   response.send("<h1>phonebook api</h1>");
 });
+
+//TODO length of mongoDB database to respond
 app.get("/info", (request, response) => {
   const now = new Date();
   const timezone = now.toString().match(/\(([A-Za-z\s].*)\)/)[1];
@@ -51,10 +49,22 @@ app.get("/api/persons", (request, response) => {
   });
 });
 
-app.get("/api/persons/:id", (req, res, next) => {
-  const id = req.params.id;
-  Person.findById(id)
-    .then((person) => res.json(person))
+// app.get("/api/persons/:id", (req, res, next) => {
+//   const id = req.params.id;
+//   Person.findById(id)
+//     .then((person) => res.json(person))
+//     .catch((error) => next(error));
+// });
+
+app.get("/api/persons/:id", (request, response) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
     .catch((error) => next(error));
 });
 
@@ -67,17 +77,12 @@ app.delete("/api/persons/:id", (req, res, next) => {
     .catch((error) => next(error));
 });
 
-const generateId = () => {
-  const maxId = persons.length > 0 ? Math.max(...persons.map((n) => n.id)) : 0;
-  return maxId + 1;
-};
-
 app.post("/api/persons", (req, res, next) => {
   const body = req.body;
 
   if (!body.name || !body.number) {
     return res.status(400).json({
-      error: "Name or number data is missing",
+      error: "number or name is missing",
     });
   }
 
@@ -91,11 +96,39 @@ app.post("/api/persons", (req, res, next) => {
     .then((savedContact) => res.json(savedContact))
     .catch((error) => next(error));
 });
+
+app.put("/api/persons/:id", (req, res, next) => {
+  const id = req.params.id;
+  const person = {
+    name: req.body.name,
+    number: req.body.number,
+  };
+  Person.findByIdAndUpdate(id, person, {
+    new: true,
+  })
+    .then((updatedPerson) => {
+      res.json(updatedPerson).end();
+    })
+    .catch((error) => next(error));
+});
+
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: "unknown endpoint" });
 };
 
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  }
+  next(error);
+};
+
 app.use(unknownEndpoint);
+
+// this has to be the last loaded middleware.
+app.use(errorHandler);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
