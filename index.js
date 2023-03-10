@@ -3,7 +3,6 @@ const express = require("express");
 const morgan = require("morgan");
 const app = express();
 const cors = require("cors");
-const mongoose = require("mongoose");
 const Person = require("./models/person");
 
 app.use(cors());
@@ -18,11 +17,6 @@ app.use(
 morgan.token("data", (req) => {
   if (req.method === "POST") return JSON.stringify(req.body);
 });
-
-const url = process.env.MONGODB_URI;
-
-mongoose.set("strictQuery", false);
-mongoose.connect(url);
 
 app.get("/", (request, response) => {
   response.send("<h1>phonebook api</h1>");
@@ -53,7 +47,7 @@ app.get("/api/persons", (request, response) => {
   });
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (next, request, response) => {
   Person.findById(request.params.id)
     .then((person) => {
       if (person) {
